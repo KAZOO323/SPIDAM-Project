@@ -1,7 +1,20 @@
 import tkinter as tk
+from tkinter import filedialog
 import matplotlib.pyplot as plt
 #from matplotlib.backends.backend_gtk4 import FigureCanvasGTK4
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# File browse command
+def browseFiles():
+    filename = filedialog.askopenfilename(initialdir="/",
+                                          title="Select a File",
+                                          filetypes=(("Text files",
+                                                      "*.txt*"),
+                                                     ("all files",
+                                                      "*.*")))
+
+    # Change label contents
+    fileLabel.configure(text="File name: "+filename)
 
 # Main window
 window = tk.Tk()
@@ -9,11 +22,12 @@ window.title("Interactive Data Acoustic Modeling")
 window.geometry("750x700")
 
 # File select button
-fileButton = tk.Button(window, text="Open a File", width=25, command=window.destroy)
+fileButton = tk.Button(window, text="Open a File", width=25, command=browseFiles)
 fileButton.pack()
 
 # File name
 fileLabel = tk.Label(window, text="File name: ")
+fileLabel.pack()
 
 # Plots
 fig, ax = plt.subplots()
@@ -27,6 +41,7 @@ differenceLabel = tk.Label(window, text="Difference: _._s")
 lengthLabel.pack()
 frequencyLabel.pack()
 differenceLabel.pack()
+
 
 #Graph Types
 IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=25, command=window.destroy)
