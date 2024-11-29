@@ -1,33 +1,60 @@
 import tkinter as tk
 from tkinter import filedialog
 import matplotlib.pyplot as plt
-#from matplotlib.backends.backend_gtk4 import FigureCanvasGTK4
+from fontTools.misc.textTools import tostr
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import pydub
+import subprocess
 
-# File browse command
+currentFile = None
+convertedFile = "convert.wav"
+
+# File selection
 def browseFiles():
-    filename = filedialog.askopenfilename(initialdir="/",
+    global currentFile
+    currentFile = filedialog.askopenfilename(initialdir="/",
                                           title="Select a File",
-                                          filetypes=(("Text files",
-                                                      "*.txt*"),
-                                                     ("all files",
-                                                      "*.*")))
+                                          filetypes=(("Audio files", ".wav .mp3"), ("All Files","*.*")))
 
     # Change label contents
-    fileLabel.configure(text="File name: "+filename)
+    fileLabel.configure(text="File name: "+currentFile)
+
+# File analyze
+def analyzeFile():
+    # Undefined selection check
+    if currentFile is None or len(currentFile) == 0:
+        print("File undefined")
+        return
+
+    # Convert from mp3 to wav (THIS DOESN'T WORK?)
+    sound = pydub.AudioSegment.from_mp3(currentFile)
+    sound.export(convertedFile, format="wav")
+
+    #Check and handle meta/2chan
+
+    # Display Duration
+    lengthLabel.configure(text=f"File Length = {sound.duration_seconds:.2f}s")
+
+    # Generate Plots
+    ## Waveform
+    ## RT60 Low, Medium, High
 
 # Main window
 window = tk.Tk()
 window.title("Interactive Data Acoustic Modeling")
-window.geometry("750x700")
+window.geometry("750x750")
 
 # File select button
-fileButton = tk.Button(window, text="Open a File", width=25, command=browseFiles)
-fileButton.pack()
+fileSelectButton = tk.Button(window, text="Open a File", width=25, command=browseFiles)
+fileSelectButton.pack()
 
 # File name
 fileLabel = tk.Label(window, text="File name: ")
 fileLabel.pack()
+
+# File analyze button
+fileAnalyzeButton = tk.Button(window, text="Analyze File", width=25, command=analyzeFile)
+fileAnalyzeButton.pack()
 
 # Plots
 fig, ax = plt.subplots()
