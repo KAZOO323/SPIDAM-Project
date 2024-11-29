@@ -6,28 +6,28 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pydub
 import subprocess
 
-currentFile = None
+selectedFile = None
 convertedFile = "convert.wav"
 
 # File selection
 def browseFiles():
-    global currentFile
-    currentFile = filedialog.askopenfilename(initialdir="/",
+    global selectedFile
+    selectedFile = filedialog.askopenfilename(initialdir="/",
                                           title="Select a File",
                                           filetypes=(("Audio files", ".wav .mp3"), ("All Files","*.*")))
 
     # Change label contents
-    fileLabel.configure(text="File name: "+currentFile)
+    fileLabel.configure(text="File name: "+selectedFile)
 
 # File analyze
 def analyzeFile():
     # Undefined selection check
-    if currentFile is None or len(currentFile) == 0:
+    if selectedFile is None or len(selectedFile) == 0:
         print("File undefined")
         return
 
     # Convert from mp3 to wav (THIS DOESN'T WORK?)
-    sound = pydub.AudioSegment.from_mp3(currentFile)
+    sound = pydub.AudioSegment.from_mp3(selectedFile)
     sound.export(convertedFile, format="wav")
 
     #Check and handle meta/2chan
