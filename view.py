@@ -122,7 +122,7 @@ def browseFiles():
     # Change label contents
     fileLabel.configure(text="File name: "+srcFile)
 
-# File analyze
+# File analyzing
 def analyzeFile():
     # Undefined selection check
     if srcFile is None or len(srcFile) == 0:
