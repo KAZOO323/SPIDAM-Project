@@ -8,7 +8,7 @@ import wave
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import welch
-
+from scipy.signal import find_peaks
 
 # Files
 srcFile = None
@@ -35,13 +35,34 @@ def drawWaveformPlot():
     global currentFreq
     currentFreq = "high"
 
+def drawIntensityPlot():
+    # Clear canvas
+    plt.clf()
+
+    # Spectrum Setup
+    sample_rate, data = wavfile.read(convertedFileLocation)
+    spectrum, freqs, t, im = plt.specgram(data, Fs=sample_rate, \
+                                          NFFT=1024, cmap=plt.get_cmap('autumn_r'))
+
+    # Plot & Axis Titles
+    cbar = plt.colorbar(im)
+    plt.title("Intensity Graph")
+    plt.xlabel('Time (s)')
+    plt.ylabel('Frequency (Hz)')
+    cbar.set_label('Intensity (dB)')
+    canvas.draw()
+
+    # Reset RT60 graph cycle
+    global currentFreq
+    currentFreq = "high"
+
 ## RT60 Low, Mid, High. If type is None, draw combined plot.
 def drawRT60Plot(type):
     # Clear canvas
     plt.clf()
 
     # Axis titles
-    plt.xlabel("Time (s)")
+    plt.xlabel("Frequency (Hz)")
     plt.ylabel("Power (DB)")
 
     # Get frequency data
@@ -60,6 +81,10 @@ def drawRT60Plot(type):
         ##High
         indices = np.where((freqs > 1500) & (freqs < 15000))
         plt.plot(freqs[indices], data[indices])
+
+        # Reset RT60 graph cycle
+        global currentFreq
+        currentFreq = "high"
 
     elif type == "low":
         plt.title("Low RT60 Graph")
@@ -129,6 +154,12 @@ def analyzeFile():
     frequencies, power = welch(data, sample_rate, nperseg=4096)
     dominant_frequency = frequencies[np.argmax(power)]
     frequencyLabel.configure(text=f"Resonant Frequency: {round(dominant_frequency)} Hz")
+    # Define and display Difference
+    sr, data = wavfile.read(convertedFileLocation)
+    n = len(data)
+    freqs = np.fft.fftfreq(n, d=1 / sr)
+    peak1 = find_peaks(freqs[np.where((freqs >= 0) & (freqs < 15))])
+    print(peak1)
 
 # Tkinter UI
 ## Main window
@@ -156,7 +187,7 @@ frequencyLabel = tk.Label(window, text="Resonant Frequency: __ Hz")
 differenceLabel = tk.Label(window, text="Difference: _._s")
 
 ## Graph Types
-IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=17, command=window.destroy)
+IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=17, command=drawIntensityPlot)
 WaveformGraphButton = tk.Button(window, text="Waveform Graph", width=17, command=drawWaveformPlot)
 CycleRT60Button = tk.Button(window, text="Cycle RT60 Graphs", width=17, command=cycleFrequencies)
 CombineRT60Button = tk.Button(window, text="Combine RT60 Graphs", width=17, command=combineRT60Graphs)
