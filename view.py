@@ -35,13 +35,12 @@ def drawWaveformPlot():
     global currentFreq
     currentFreq = "high"
 
-## RT60 Low, Mid, High
+## RT60 Low, Mid, High. If type is None, draw combined plot.
 def drawRT60Plot(type):
     # Clear canvas
     plt.clf()
 
     # Axis titles
-    #plt.title("Low RT60 Graph")
     plt.xlabel("Time (s)")
     plt.ylabel("Power (DB)")
 
@@ -50,7 +49,19 @@ def drawRT60Plot(type):
     n = len(data)
     fft_result = np.fft.fft(data)
     freqs = np.fft.fftfreq(n, d=1 / sr)
-    if type == "low":
+    if type is None:
+        plt.title("Combined RT60 Graph")
+        ##Low
+        indices = np.where((freqs >= 0) & (freqs < 15))
+        plt.plot(freqs[indices], data[indices])
+        ##Mid
+        indices = np.where((freqs >= 15) & (freqs < 1500))
+        plt.plot(freqs[indices], data[indices])
+        ##High
+        indices = np.where((freqs > 1500) & (freqs < 15000))
+        plt.plot(freqs[indices], data[indices])
+
+    elif type == "low":
         plt.title("Low RT60 Graph")
         indices = np.where((freqs >= 0) & (freqs < 15))
     elif type == "mid":
@@ -61,7 +72,8 @@ def drawRT60Plot(type):
         indices = np.where((freqs > 1500) & (freqs < 15000))
 
     # Plot frequency data and display
-    plt.plot(freqs[indices], data[indices])
+    if type is not None:
+        plt.plot(freqs[indices], data[indices])
     canvas.draw()
 
 currentFreq = "high" #Default "high" so first graph is Low RT60
@@ -77,6 +89,10 @@ def cycleFrequencies():
     elif currentFreq == "high":
         currentFreq = "low"
         drawRT60Plot("low")
+
+## Draws all three RT60 graphs at once. Behavior handler for button
+def combineRT60Graphs():
+    drawRT60Plot(None)
 
 # File selection
 def browseFiles():
@@ -143,7 +159,7 @@ differenceLabel = tk.Label(window, text="Difference: _._s")
 IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=17, command=window.destroy)
 WaveformGraphButton = tk.Button(window, text="Waveform Graph", width=17, command=drawWaveformPlot)
 CycleRT60Button = tk.Button(window, text="Cycle RT60 Graphs", width=17, command=cycleFrequencies)
-CombineRT60Button = tk.Button(window, text="Combine RT60 Graphs", width=17, command=window.destroy)
+CombineRT60Button = tk.Button(window, text="Combine RT60 Graphs", width=17, command=combineRT60Graphs)
 
 # Grid Layout
 ## File buttons
