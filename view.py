@@ -1,18 +1,21 @@
 import tkinter as tk
+from itertools import cycle
 from tkinter import filedialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pydub
 import wave
 import numpy as np
+from scipy.io import wavfile
+from scipy.signal import welch
+
 
 # Files
 srcFile = None
 convertedFileLocation = "convert.wav"
-# Plots
-#f = plt.figure(1)
 
 # Plots
+## Waveform
 def drawWaveformPlot():
     # Clear canvas
     plt.clf()
@@ -23,13 +26,91 @@ def drawWaveformPlot():
     plt.ylabel("Amplitude")
 
     # Plot data and display on canvas
-    fig = plt.figure(1)
     spf = wave.open(convertedFileLocation, "r")
     fs = spf.getframerate()
     signal = np.fromstring(spf.readframes(-1), np.int16)
     plt.plot(np.linspace(0, len(signal) / fs, num=len(signal)), signal)
-    fig.set_canvas(canvas)
     canvas.draw()
+    # Reset RT60 graph cycle
+    global currentFreq
+    currentFreq = "high"
+
+## Low RT60
+def drawLowFreq():
+    # Clear canvas
+    plt.clf()
+
+    # Axis titles
+    plt.title("Low RT60 Graph")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Power (DB)")
+
+    # Get frequency data
+    sr, data = wavfile.read(convertedFileLocation)
+    n = len(data)
+    fft_result = np.fft.fft(data)
+    freqs = np.fft.fftfreq(n, d=1 / sr)
+    indices = np.where((freqs >= 0) & (freqs < 15))
+
+    # Plot frequency data and display
+    plt.plot(freqs[indices], data[indices])
+    canvas.draw()
+
+## Mid RT60
+def drawMidFreq():
+    # Clear canvas
+    plt.clf()
+
+    # Axis titles
+    plt.title("Mid RT60 Graph")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Power (DB)")
+
+    # Get frequency data
+    sr, data = wavfile.read(convertedFileLocation)
+    n = len(data)
+    fft_result = np.fft.fft(data)
+    freqs = np.fft.fftfreq(n, d=1 / sr)
+    indices = np.where((freqs >= 15) & (freqs < 1500))
+
+    # Plot frequency data and display
+    plt.plot(freqs[indices], data[indices])
+    canvas.draw()
+
+## High RT60
+def drawHighFreq():
+    # Clear canvas
+    plt.clf()
+
+    # Axis titles
+    plt.title("High RT60 Graph")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Power (DB)")
+
+    # Get frequency data
+    sr, data = wavfile.read(convertedFileLocation)
+    n = len(data)
+    fft_result = np.fft.fft(data)
+    freqs = np.fft.fftfreq(n, d=1 / sr)
+    indices = np.where((freqs >= 1500) & (freqs < 15000))
+
+    # Plot frequency data and display
+    plt.plot(freqs[indices], data[indices])
+    canvas.draw()
+
+currentFreq = "high"
+## Cycles between RT60 graphs
+def cycleFrequencies():
+    global currentFreq
+    if currentFreq == "low":
+        currentFreq = "mid"
+        drawMidFreq()
+    elif currentFreq == "mid":
+        currentFreq = "high"
+        drawHighFreq()
+    elif currentFreq == "high":
+        currentFreq = "low"
+        drawLowFreq()
 
 # File selection
 def browseFiles():
@@ -59,11 +140,13 @@ def analyzeFile():
     # Display Duration
     lengthLabel.configure(text=f"File Length = {currentSound.duration_seconds:.2f}s")
 
-    # Generate Plots
-    ## Waveform
+    # Generate waveform plot
     drawWaveformPlot()
-
-    ## RT60 Low, Medium, High
+    # Define and display Resonant Frequency
+    sample_rate, data = wavfile.read(convertedFileLocation)
+    frequencies, power = welch(data, sample_rate, nperseg=4096)
+    dominant_frequency = frequencies[np.argmax(power)]
+    frequencyLabel.configure(text=f"Resonant Frequency: {round(dominant_frequency)} Hz")
 
 # Tkinter UI
 ## Main window
@@ -93,7 +176,7 @@ differenceLabel = tk.Label(window, text="Difference: _._s")
 ## Graph Types
 IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=17, command=window.destroy)
 WaveformGraphButton = tk.Button(window, text="Waveform Graph", width=17, command=drawWaveformPlot)
-CycleRT60Button = tk.Button(window, text="Cycle RT60 Graphs", width=17, command=window.destroy)
+CycleRT60Button = tk.Button(window, text="Cycle RT60 Graphs", width=17, command=cycleFrequencies)
 CombineRT60Button = tk.Button(window, text="Combine RT60 Graphs", width=17, command=window.destroy)
 
 # Grid Layout
