@@ -35,13 +35,13 @@ def drawWaveformPlot():
     global currentFreq
     currentFreq = "high"
 
-## Low RT60
-def drawLowFreq():
+## RT60 Low, Mid, High
+def drawRT60Plot(type):
     # Clear canvas
     plt.clf()
 
     # Axis titles
-    plt.title("Low RT60 Graph")
+    #plt.title("Low RT60 Graph")
     plt.xlabel("Time (s)")
     plt.ylabel("Power (DB)")
 
@@ -50,67 +50,33 @@ def drawLowFreq():
     n = len(data)
     fft_result = np.fft.fft(data)
     freqs = np.fft.fftfreq(n, d=1 / sr)
-    indices = np.where((freqs >= 0) & (freqs < 15))
+    if type == "low":
+        plt.title("Low RT60 Graph")
+        indices = np.where((freqs >= 0) & (freqs < 15))
+    elif type == "mid":
+        plt.title("Middle RT60 Graph")
+        indices = np.where((freqs >= 15) & (freqs < 1500))
+    elif type == "high":
+        plt.title("High RT60 Graph")
+        indices = np.where((freqs > 1500) & (freqs < 15000))
 
     # Plot frequency data and display
     plt.plot(freqs[indices], data[indices])
     canvas.draw()
 
-## Mid RT60
-def drawMidFreq():
-    # Clear canvas
-    plt.clf()
-
-    # Axis titles
-    plt.title("Mid RT60 Graph")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Power (DB)")
-
-    # Get frequency data
-    sr, data = wavfile.read(convertedFileLocation)
-    n = len(data)
-    fft_result = np.fft.fft(data)
-    freqs = np.fft.fftfreq(n, d=1 / sr)
-    indices = np.where((freqs >= 15) & (freqs < 1500))
-
-    # Plot frequency data and display
-    plt.plot(freqs[indices], data[indices])
-    canvas.draw()
-
-## High RT60
-def drawHighFreq():
-    # Clear canvas
-    plt.clf()
-
-    # Axis titles
-    plt.title("High RT60 Graph")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Power (DB)")
-
-    # Get frequency data
-    sr, data = wavfile.read(convertedFileLocation)
-    n = len(data)
-    fft_result = np.fft.fft(data)
-    freqs = np.fft.fftfreq(n, d=1 / sr)
-    indices = np.where((freqs >= 1500) & (freqs < 15000))
-
-    # Plot frequency data and display
-    plt.plot(freqs[indices], data[indices])
-    canvas.draw()
-
-currentFreq = "high"
+currentFreq = "high" #Default "high" so first graph is Low RT60
 ## Cycles between RT60 graphs
 def cycleFrequencies():
     global currentFreq
     if currentFreq == "low":
         currentFreq = "mid"
-        drawMidFreq()
+        drawRT60Plot("mid")
     elif currentFreq == "mid":
         currentFreq = "high"
-        drawHighFreq()
+        drawRT60Plot("high")
     elif currentFreq == "high":
         currentFreq = "low"
-        drawLowFreq()
+        drawRT60Plot("low")
 
 # File selection
 def browseFiles():
