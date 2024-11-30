@@ -1,3 +1,4 @@
+import model
 import tkinter as tk
 from itertools import cycle
 from tkinter import filedialog
@@ -7,7 +8,7 @@ import pydub
 import wave
 import numpy as np
 from scipy.io import wavfile
-from scipy.signal import welch
+from scipy.signal import welch, freqs
 from scipy.signal import find_peaks
 
 # Files
@@ -17,107 +18,28 @@ convertedFileLocation = "convert.wav"
 # Plots
 ## Waveform
 def drawWaveformPlot():
-    # Clear canvas
-    plt.clf()
+    GraphHandler.drawWaveformPlot()
 
-    # Plot and axis titles
-    plt.title("Waveform Graph")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude")
-
-    # Plot data and display on canvas
-    spf = wave.open(convertedFileLocation, "r")
-    fs = spf.getframerate()
-    signal = np.fromstring(spf.readframes(-1), np.int16)
-    plt.plot(np.linspace(0, len(signal) / fs, num=len(signal)), signal)
-    canvas.draw()
-    # Reset RT60 graph cycle
-    global currentFreq
-    currentFreq = "high"
-
+## Intensity
 def drawIntensityPlot():
-    # Clear canvas
-    plt.clf()
+    GraphHandler.drawIntensityPlot()
 
-    # Spectrum Setup
-    sample_rate, data = wavfile.read(convertedFileLocation)
-    spectrum, freqs, t, im = plt.specgram(data, Fs=sample_rate, \
-                                          NFFT=1024, cmap=plt.get_cmap('autumn_r'))
-
-    # Plot & Axis Titles
-    cbar = plt.colorbar(im)
-    plt.title("Intensity Graph")
-    plt.xlabel('Time (s)')
-    plt.ylabel('Frequency (Hz)')
-    cbar.set_label('Intensity (dB)')
-    canvas.draw()
-
-    # Reset RT60 graph cycle
-    global currentFreq
-    currentFreq = "high"
-
-## RT60 Low, Mid, High. If type is None, draw combined plot.
-def drawRT60Plot(type):
-    # Clear canvas
-    plt.clf()
-
-    # Axis titles
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Power (DB)")
-
-    # Get frequency data
-    sr, data = wavfile.read(convertedFileLocation)
-    n = len(data)
-    fft_result = np.fft.fft(data)
-    freqs = np.fft.fftfreq(n, d=1 / sr)
-    if type is None:
-        plt.title("Combined RT60 Graph")
-        ##Low
-        indices = np.where((freqs >= 0) & (freqs < 15))
-        plt.plot(freqs[indices], data[indices])
-        ##Mid
-        indices = np.where((freqs >= 15) & (freqs < 1500))
-        plt.plot(freqs[indices], data[indices])
-        ##High
-        indices = np.where((freqs > 1500) & (freqs < 15000))
-        plt.plot(freqs[indices], data[indices])
-
-        # Reset RT60 graph cycle
-        global currentFreq
-        currentFreq = "high"
-
-    elif type == "low":
-        plt.title("Low RT60 Graph")
-        indices = np.where((freqs >= 0) & (freqs < 15))
-    elif type == "mid":
-        plt.title("Middle RT60 Graph")
-        indices = np.where((freqs >= 15) & (freqs < 1500))
-    elif type == "high":
-        plt.title("High RT60 Graph")
-        indices = np.where((freqs > 1500) & (freqs < 15000))
-
-    # Plot frequency data and display
-    if type is not None:
-        plt.plot(freqs[indices], data[indices])
-    canvas.draw()
-
-currentFreq = "high" #Default "high" so first graph is Low RT60
-## Cycles between RT60 graphs
+## RT60
+### Cycles between RT60 graphs
 def cycleFrequencies():
-    global currentFreq
-    if currentFreq == "low":
-        currentFreq = "mid"
-        drawRT60Plot("mid")
-    elif currentFreq == "mid":
-        currentFreq = "high"
-        drawRT60Plot("high")
-    elif currentFreq == "high":
-        currentFreq = "low"
-        drawRT60Plot("low")
+    if GraphHandler.currentFreq == "low":
+        GraphHandler.currentFreq = "mid"
+        GraphHandler.drawRT60Plot("mid")
+    elif GraphHandler.currentFreq == "mid":
+        GraphHandler.currentFreq = "high"
+        GraphHandler.drawRT60Plot("high")
+    elif GraphHandler.currentFreq == "high":
+        GraphHandler.currentFreq = "low"
+        GraphHandler.drawRT60Plot("low")
 
-## Draws all three RT60 graphs at once. Behavior handler for button
+### Draws all three RT60 graphs at once. Behavior handler for button
 def combineRT60Graphs():
-    drawRT60Plot(None)
+    GraphHandler.drawRT60Plot(None)
 
 # File selection
 def browseFiles():
@@ -148,18 +70,17 @@ def analyzeFile():
     lengthLabel.configure(text=f"File Length = {currentSound.duration_seconds:.2f}s")
 
     # Generate waveform plot
-    drawWaveformPlot()
+    GraphHandler.drawWaveformPlot()
+
     # Define and display Resonant Frequency
     sample_rate, data = wavfile.read(convertedFileLocation)
     frequencies, power = welch(data, sample_rate, nperseg=4096)
     dominant_frequency = frequencies[np.argmax(power)]
     frequencyLabel.configure(text=f"Resonant Frequency: {round(dominant_frequency)} Hz")
+
     # Define and display Difference
-    sr, data = wavfile.read(convertedFileLocation)
-    n = len(data)
-    freqs = np.fft.fftfreq(n, d=1 / sr)
-    peak1 = find_peaks(freqs[np.where((freqs >= 0) & (freqs < 15))])
-    print(peak1)
+    difference = GraphHandler.drawRT60Plot()
+    differenceLabel.configure(text=f"Difference: {difference}s")
 
 # Tkinter UI
 ## Main window
@@ -209,4 +130,9 @@ WaveformGraphButton.grid(row=4, column=1)
 CycleRT60Button.grid(row=4, column=2)
 CombineRT60Button.grid(row=4, column=3)
 
+# Application Object
+GraphHandler = model.GraphHandler(canvas)
+GraphHandler.currentFreq = "high" #Default "high" so first graph is Low RT60
+
+# Launch application
 window.mainloop()
