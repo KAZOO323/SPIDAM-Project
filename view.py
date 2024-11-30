@@ -1,89 +1,116 @@
 import tkinter as tk
 from tkinter import filedialog
 import matplotlib.pyplot as plt
-from fontTools.misc.textTools import tostr
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pydub
-import subprocess
+import wave
+import numpy as np
 
-selectedFile = None
-convertedFile = "convert.wav"
+# Files
+srcFile = None
+convertedFileLocation = "convert.wav"
+# Plots
+#f = plt.figure(1)
+
+# Plots
+def drawWaveformPlot():
+    # Clear canvas
+    plt.clf()
+
+    # Plot and axis titles
+    plt.title("Waveform Graph")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+
+    # Plot data and display on canvas
+    fig = plt.figure(1)
+    spf = wave.open(convertedFileLocation, "r")
+    fs = spf.getframerate()
+    signal = np.fromstring(spf.readframes(-1), np.int16)
+    plt.plot(np.linspace(0, len(signal) / fs, num=len(signal)), signal)
+    fig.set_canvas(canvas)
+    canvas.draw()
 
 # File selection
 def browseFiles():
-    global selectedFile
-    selectedFile = filedialog.askopenfilename(initialdir="/",
+    global srcFile
+    srcFile = filedialog.askopenfilename(initialdir="/",
                                           title="Select a File",
                                           filetypes=(("Audio files", ".wav .mp3"), ("All Files","*.*")))
 
     # Change label contents
-    fileLabel.configure(text="File name: "+selectedFile)
+    fileLabel.configure(text="File name: "+srcFile)
 
 # File analyze
 def analyzeFile():
     # Undefined selection check
-    if selectedFile is None or len(selectedFile) == 0:
+    if srcFile is None or len(srcFile) == 0:
         print("File undefined")
         return
 
-    # Convert from mp3 to wav (THIS DOESN'T WORK?)
-    sound = pydub.AudioSegment.from_mp3(selectedFile)
-    sound.export(convertedFile, format="wav")
+    # Convert from mp3 to wav, handle 2chan
+    raw_audio = pydub.AudioSegment.from_mp3(srcFile)
+    mono_audio = raw_audio.set_channels(1)
+    mono_audio.export(convertedFileLocation, format="wav")
 
-    #Check and handle meta/2chan
+    currentSound = pydub.AudioSegment.from_mp3(convertedFileLocation)
+    #Check and handle meta
 
     # Display Duration
-    lengthLabel.configure(text=f"File Length = {sound.duration_seconds:.2f}s")
+    lengthLabel.configure(text=f"File Length = {currentSound.duration_seconds:.2f}s")
 
     # Generate Plots
     ## Waveform
+    drawWaveformPlot()
+
     ## RT60 Low, Medium, High
 
-# Main window
+# Tkinter UI
+## Main window
 window = tk.Tk()
 window.title("Interactive Data Acoustic Modeling")
-window.geometry("750x750")
+window.geometry("625x640")
 
-# File select button
-fileSelectButton = tk.Button(window, text="Open a File", width=25, command=browseFiles)
-fileSelectButton.pack()
+## File select button
+fileSelectButton = tk.Button(window, text="Open a File", width=18, command=browseFiles)
 
-# File name
+## File name
 fileLabel = tk.Label(window, text="File name: ")
-fileLabel.pack()
 
-# File analyze button
-fileAnalyzeButton = tk.Button(window, text="Analyze File", width=25, command=analyzeFile)
-fileAnalyzeButton.pack()
+## File analyze button
+fileAnalyzeButton = tk.Button(window, text="Analyze File", width=18, command=analyzeFile)
 
-# Plots
-fig, ax = plt.subplots()
+## Plots
+global fig
+fig = plt.figure(1)
 canvas = FigureCanvasTkAgg(fig, master = window)
-canvas.get_tk_widget().pack()
 
-# File data
+## File data
 lengthLabel = tk.Label(window, text="File Length = 0s")
 frequencyLabel = tk.Label(window, text="Resonant Frequency: __ Hz")
 differenceLabel = tk.Label(window, text="Difference: _._s")
-lengthLabel.pack()
-frequencyLabel.pack()
-differenceLabel.pack()
 
+## Graph Types
+IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=17, command=window.destroy)
+WaveformGraphButton = tk.Button(window, text="Waveform Graph", width=17, command=drawWaveformPlot)
+CycleRT60Button = tk.Button(window, text="Cycle RT60 Graphs", width=17, command=window.destroy)
+CombineRT60Button = tk.Button(window, text="Combine RT60 Graphs", width=17, command=window.destroy)
 
-#Graph Types
-IntensityGraphButton = tk.Button(window, text="Intensity Graph", width=25, command=window.destroy)
-WaveformGraphButton = tk.Button(window, text="Waveform Graph", width=25, command=window.destroy)
-CycleRT60Button = tk.Button(window, text="Cycle RT60 Graphs", width=25, command=window.destroy)
-CombineRT60Button = tk.Button(window, text="Combine RT60 Graphs", width=25, command=window.destroy)
-IntensityGraphButton.pack()
-WaveformGraphButton.pack()
-CycleRT60Button.pack()
-CombineRT60Button.pack()
-
-#Grid layout (UNUSED ATM)
-#IntensityGraphButton.grid(row=0, column=0)
-#WaveformGraphButton.grid(row=0, column=1)
-#CycleRT60Button.grid(row=1, column=0, columnspan=2)
-#CombineRT60Button.grid(row=1, column=0, columnspan=2)
+# Grid Layout
+## File buttons
+fileSelectButton.grid(row=0, column=0, padx=5, pady=10)
+fileAnalyzeButton.grid(row=1, column=0, padx=5, pady=0)
+## Info labels
+fileLabel.grid(row=0, column=1, columnspan = 3, padx=0, pady=10, sticky=tk.W)
+lengthLabel.grid(row=1, column=1, padx=0, pady=0, sticky=tk.W)
+frequencyLabel.grid(row=1, column=2, padx=0, pady=0, sticky=tk.W)
+differenceLabel.grid(row=1, column=3, padx=0, pady=0, sticky=tk.W)
+## Graph
+canvas.get_tk_widget().grid(row=3, column=0, columnspan=6, pady = 20)
+## Graph buttons
+IntensityGraphButton.grid(row=4, column=0)
+WaveformGraphButton.grid(row=4, column=1)
+CycleRT60Button.grid(row=4, column=2)
+CombineRT60Button.grid(row=4, column=3)
 
 window.mainloop()
