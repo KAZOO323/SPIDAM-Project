@@ -21,13 +21,20 @@ def drawWaveformPlot():
 def drawIntensityPlot():
     GraphHandler.drawIntensityPlot()
 
-
 def cycleFrequencies():
-    GraphHandler.cycleRT60Graphs()
+    if GraphHandler.currentFreq == "low":
+        GraphHandler.currentFreq = "mid"
+        GraphHandler.drawRT60Plot("mid", False)
+    elif GraphHandler.currentFreq == "mid":
+        GraphHandler.currentFreq = "high"
+        GraphHandler.drawRT60Plot("high", False)
+    elif GraphHandler.currentFreq == "high":
+        GraphHandler.currentFreq = "low"
+        GraphHandler.drawRT60Plot("low", False)
 
 
 def combineRT60Graphs():
-    GraphHandler.drawRT60Plot(None)
+    GraphHandler.drawRT60Plot(None, False)
 
 
 # File selection
@@ -70,7 +77,7 @@ def analyzeFile():
         frequencyLabel.configure(text=f"Resonant Frequency: {round(dominant_frequency)} Hz")
 
         # RT60 Difference
-        difference = GraphHandler.drawRT60Plot("mid")
+        difference = GraphHandler.drawRT60Plot("mid", False)
         differenceLabel.configure(text=f"Difference: {difference}s")
 
         # Generate Waveform Plot
