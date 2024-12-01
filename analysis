@@ -1,0 +1,42 @@
+import math
+
+def calculate_rt60(audio_data, sample_rate):
+    """Estimate RT60 time using Schroeder integration without NumPy."""
+    # Reverse the audio data
+    reversed_data = audio_data[::-1]
+
+    # Compute cumulative sum of squared amplitudes
+    energy = []
+    cumulative = 0
+    for sample in reversed_data:
+        cumulative += sample ** 2
+        energy.append(cumulative)
+
+    # Reverse the energy array to match the original signal direction
+    energy = energy[::-1]
+
+    # Normalize energy by maximum value to prevent division by zero
+    max_energy = max(energy)
+    if max_energy == 0:
+        return None  # Avoid division by zero
+
+    # Convert energy to decibels
+    energy_db = []
+    for e in energy:
+        if e == 0:
+            energy_db.append(-float('inf'))  # log(0) is undefined, set to negative infinity
+        else:
+            energy_db.append(10 * math.log10(e / max_energy))
+
+    # Find the index where energy drops below -60 dB
+    rt60_index = None
+    for i, db in enumerate(energy_db):
+        if db < -60:
+            rt60_index = i
+            break
+
+    if rt60_index is not None:
+        rt60 = rt60_index / sample_rate
+        return rt60
+    else:
+        return None  # If the signal doesn't decay below -60 dB
