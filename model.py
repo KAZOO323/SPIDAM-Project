@@ -76,8 +76,10 @@ class GraphHandler:
     ## Helper Function
     def frequencyCheck(self, type):
         sample_rate, data = wavfile.read(convertedFileLocation)
+        plt.figure(2)
         spectrum, self.freqs, self.t, im = plt.specgram(data, Fs=sample_rate, \
                                               NFFT=1024, cmap=plt.get_cmap('autumn_r'))
+        plt.figure(1)
 
         global targetFrequency
         targetFrequency = self.findTargetFrequency(type)
@@ -95,18 +97,18 @@ class GraphHandler:
         return array[idx]
 
     # Draw and display RT60 plot types. If type is None, draw combined plot.
-    def drawRT60Plot(self, type):
-        data_in_db = self.frequencyCheck(type)
+    def drawRT60Plot(self, type, dontClear):
+        if type is not None:
+            data_in_db = self.frequencyCheck(type)
+            #plt.clf()
 
         # Clear canvas
-        plt.clf()
+        if dontClear == False:
+            plt.clf()
         plt.figure(1)
 
-        plt.plot(self.t, data_in_db, linewidth=1, alpha=0.7)
         # Axis Title
-        if type is None:
-            plt.title("Combined RT60 Graph")
-        elif type == "low":
+        if type == "low":
             plt.title("Low RT60 Graph")
         elif type == "mid":
             plt.title("Middle RT60 Graph")
@@ -116,28 +118,40 @@ class GraphHandler:
         plt.ylabel('Power (dB)')
 
         # Find an index of a max value
-        index_of_max = np.argmax(data_in_db)
-        value_of_max = data_in_db[index_of_max]
-        plt.plot(self.t[index_of_max], data_in_db[index_of_max], 'go')
+        if type is not None:
+            plt.plot(self.t, data_in_db, linewidth=1, alpha=0.7)
 
-        # Slice our array from a max value
-        sliced_array = data_in_db[index_of_max:]
-        value_of_max_less_5 = value_of_max - 5
+            index_of_max = np.argmax(data_in_db)
+            value_of_max = data_in_db[index_of_max]
+            plt.plot(self.t[index_of_max], data_in_db[index_of_max], 'go')
 
-        value_of_max_less_5 = self.find_nearest_value(sliced_array, value_of_max_less_5)
-        index_of_max_less_5 = np.where(data_in_db == value_of_max_less_5)
-        plt.plot(self.t[index_of_max_less_5], data_in_db[index_of_max_less_5], 'yo')
+            # Slice our array from a max value
+            sliced_array = data_in_db[index_of_max:]
+            value_of_max_less_5 = value_of_max - 5
 
-        # Slice array from a max-5db
-        value_of_max_less_25 = value_of_max - 25
-        value_of_max_less_25 = self.find_nearest_value(sliced_array, value_of_max_less_25)
-        index_of_max_less_25 = np.where(data_in_db == value_of_max_less_25)
-        plt.plot(self.t[index_of_max_less_25], data_in_db[index_of_max_less_25], 'ro')
+            value_of_max_less_5 = self.find_nearest_value(sliced_array, value_of_max_less_5)
+            index_of_max_less_5 = np.where(data_in_db == value_of_max_less_5)
+            plt.plot(self.t[index_of_max_less_5], data_in_db[index_of_max_less_5], 'yo')
 
-        rt20 = (self.t[index_of_max_less_5] - self.t[index_of_max_less_25])[0]
-        rt60 = 3 * rt20
-        plt.grid()
+            # Slice array from a max-5db
+            value_of_max_less_25 = value_of_max - 25
+            value_of_max_less_25 = self.find_nearest_value(sliced_array, value_of_max_less_25)
+            index_of_max_less_25 = np.where(data_in_db == value_of_max_less_25)
+            plt.plot(self.t[index_of_max_less_25], data_in_db[index_of_max_less_25], 'ro')
+
+            rt20 = (self.t[index_of_max_less_5] - self.t[index_of_max_less_25])[0]
+            rt60 = 3 * rt20
+            plt.grid()
+
+        if type is None:
+            self.drawRT60Plot("low", True)
+            self.drawRT60Plot("mid", True)
+            self.drawRT60Plot("high", True)
+
+            plt.title("Combined RT60 Graph")
+
         self.canvas.draw()
 
         # Return Difference
-        return round(abs(rt60), 2)
+        if type is not None:
+            return round(abs(rt60), 2)

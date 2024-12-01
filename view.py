@@ -29,17 +29,17 @@ def drawIntensityPlot():
 def cycleFrequencies():
     if GraphHandler.currentFreq == "low":
         GraphHandler.currentFreq = "mid"
-        GraphHandler.drawRT60Plot("mid")
+        GraphHandler.drawRT60Plot("mid", False)
     elif GraphHandler.currentFreq == "mid":
         GraphHandler.currentFreq = "high"
-        GraphHandler.drawRT60Plot("high")
+        GraphHandler.drawRT60Plot("high", False)
     elif GraphHandler.currentFreq == "high":
         GraphHandler.currentFreq = "low"
-        GraphHandler.drawRT60Plot("low")
+        GraphHandler.drawRT60Plot("low", False)
 
 ### Draws all three RT60 graphs at once. Behavior handler for button
 def combineRT60Graphs():
-    GraphHandler.drawRT60Plot(None)
+    GraphHandler.drawRT60Plot(None, False)
 
 # File selection
 def browseFiles():
@@ -69,9 +69,6 @@ def analyzeFile():
     # Display Duration
     lengthLabel.configure(text=f"File Length = {currentSound.duration_seconds:.2f}s")
 
-    # Generate waveform plot
-    GraphHandler.drawWaveformPlot()
-
     # Define and display Resonant Frequency
     sample_rate, data = wavfile.read(convertedFileLocation)
     frequencies, power = welch(data, sample_rate, nperseg=4096)
@@ -79,8 +76,11 @@ def analyzeFile():
     frequencyLabel.configure(text=f"Resonant Frequency: {round(dominant_frequency)} Hz")
 
     # Define and display Difference
-    difference = GraphHandler.drawRT60Plot()
+    difference = GraphHandler.drawRT60Plot("mid", False)
     differenceLabel.configure(text=f"Difference: {difference}s")
+
+    # Generate waveform plot
+    GraphHandler.drawWaveformPlot()
 
 # Tkinter UI
 ## Main window
