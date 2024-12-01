@@ -1,0 +1,19 @@
+import os
+from pydub import AudioSegment  # You may need to install pydub and ffmpeg
+
+def load_audio(file_path):
+    """Load audio file and convert to WAV if necessary."""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError("File not found!")
+
+    file_extension = os.path.splitext(file_path)[1].lower()
+    if file_extension == '.wav':
+        return file_path
+    elif file_extension in ['.mp3', '.aac']:
+        # Convert to WAV using pydub
+        audio = AudioSegment.from_file(file_path)
+        wav_path = file_path.replace(file_extension, '.wav')
+        audio.export(wav_path, format="wav")
+        return wav_path
+    else:
+        raise ValueError("Unsupported file format!")
