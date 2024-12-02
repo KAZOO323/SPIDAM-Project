@@ -43,7 +43,7 @@ class GraphHandler:
         spectrum, freqs, t, im = plt.specgram(self.data, Fs=self.sampleRate, \
                                               NFFT=1024, cmap=plt.get_cmap('autumn_r'))
 
-        # Plot & Axis Titles
+        # Set Plot & Axis Titles
         cbar = plt.colorbar(im)
         plt.title("Intensity Graph")
         plt.xlabel('Time (s)')

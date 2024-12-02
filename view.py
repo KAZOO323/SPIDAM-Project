@@ -8,7 +8,7 @@ import numpy as np
 from scipy.io import wavfile
 from scipy.signal import welch
 
-# Filesss
+# Files
 srcFile = None
 convertedFileLocation = "convert.wav"
 
